@@ -12,16 +12,16 @@ from aiogram.filters import Command
 from telethon import TelegramClient
 from telethon.tl.functions.messages import GetHistoryRequest
 
-# ========== НАСТРОЙКИ (ЗАМЕНИ НА СВОИ) ==========
-BOT_TOKEN = "ТВОЙ_ТОКЕН_ОТ_BOTFATHER"
-ADMIN_CHAT_ID = 123456789  # твой ID (число)
-
-RAPIDAPI_KEY = "ТВОЙ_КЛЮЧ_RAPIDAPI"
-ODDS_API_KEY = "ТВОЙ_КЛЮЧ_ODDS_API"
-
-TELEGRAM_API_ID = 12345
-TELEGRAM_API_HASH = "твой_api_hash"
-TELEGRAM_PHONE = "+71234567890"
+# ========== НАСТРОЙКИ (БЕРУТСЯ ИЗ ПЕРЕМЕННЫХ ОКРУЖЕНИЯ В RAILWAY) ==========
+import os
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+ADMIN_CHAT_ID = int(os.getenv("ADMIN_CHAT_ID", "0"))
+RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY")
+ODDS_API_KEY = os.getenv("ODDS_API_KEY")
+TELEGRAM_API_ID = int(os.getenv("TELEGRAM_API_ID", "0"))
+TELEGRAM_API_HASH = os.getenv("TELEGRAM_API_HASH")
+TELEGRAM_PHONE = os.getenv("TELEGRAM_PHONE")
+PORT = os.getenv("PORT", "8080")
 
 # ========== ИНИЦИАЛИЗАЦИЯ ==========
 bot = Bot(token=BOT_TOKEN)
@@ -96,7 +96,7 @@ def get_recent_insights(sport: str = None, limit: int = 30) -> List[Dict]:
 def save_parlay(parlay_type: str, events: str, total_odds: float):
     conn = sqlite3.connect("buzova.db")
     c = conn.cursor()
-        c.execute("INSERT INTO parlays (date, type, events, odds, status) VALUES (?, ?, ?, ?, ?)",
+    c.execute("INSERT INTO parlays (date, type, events, odds, status) VALUES (?, ?, ?, ?, ?)",
               (datetime.now().isoformat(), parlay_type, events, total_odds, "active"))
     conn.commit()
     conn.close()
@@ -216,7 +216,7 @@ def add_lesson(lesson: str, condition: str, weight: int):
     conn.close()
 
 def get_lessons() -> List[Dict]:
-conn = sqlite3.connect("buzova.db")
+    conn = sqlite3.connect("buzova.db")
     c = conn.cursor()
     c.execute("SELECT lesson, condition, weight FROM lessons ORDER BY weight DESC")
     rows = c.fetchall()
@@ -275,22 +275,18 @@ async def check_min_bank(bank_data: Dict):
     if bank_data["balance"] < 500:
         warnings = [f"🔴 СТОП-ЛОСС! БАНК УПАЛ ДО {bank_data['balance']} ₽. СТАВКИ ПРИОСТАНОВЛЕНЫ.", f"💰 ОСТАЛОСЬ {bank_data['balance']} ₽. ХВАТИТ.", f"😭 БУЗОВА ПЛАЧЕТ. БАНК: {bank_data['balance']} ₽."]
         await bot.send_message(ADMIN_CHAT_ID, f"🚨 **СТОП-ЛОСС**\n\n{random.choice(warnings)}")
-        def get_bank_chart(days: int = 30) -> str:
+
+def get_bank_chart(days: int = 30) -> str:
     history = get_bank_history(days)
     if not history:
         return "📭 Недостаточно данных для графика."
     
-    if len(history) < 2:
-        return "📭 Нужно хотя бы 2 точки для графика."
-    
-    # Берём каждую 5-ю запись для графика
     step = max(1, len(history) // 15)
     filtered = history[::step]
     
     balances = [h[0] for h in filtered]
     dates = [h[1][5:10] for h in filtered]
     
-    # Создаём простой текстовый график (без matplotlib)
     max_bal = max(balances)
     min_bal = min(balances)
     range_bal = max_bal - min_bal if max_bal != min_bal else 1
@@ -304,7 +300,7 @@ async def check_min_bank(bank_data: Dict):
     chart += f"\n📊 МИН: {min_bal} ₽ | МАКС: {max_bal} ₽"
     chart += f"\n📈 РОСТ: {max_bal - min_bal:+} ₽"
     return chart
-    
+
 # ========== ЖЁСТКИЕ ЦИТАТКИ ==========
 CITATKI_WIN = [
     "🔥 ЕБАТЬ ТЫ ГОСПОДЬ БОГ СТАВОК. БУК В НОСОК. СИМПЛ ОДОБРЯЕТ.",
@@ -406,8 +402,7 @@ def fetch_match_result(match_id: int, sport: str) -> Optional[Dict]:
             fixture = data.get("response", [{}])[0]
             status = fixture.get("fixture", {}).get("status", {}).get("short", "")
             if status == "FT":
-                home_score = fixture.
-get("goals", {}).get("home", 0)
+                home_score = fixture.get("goals", {}).get("home", 0)
                 away_score = fixture.get("goals", {}).get("away", 0)
                 return {"home_score": home_score, "away_score": away_score}
         except:
@@ -443,7 +438,6 @@ def check_lessons(home: str, away: str, sport: str, insights: List[Dict]) -> Lis
     
     for lesson in lessons:
         condition = lesson["condition"]
-        # Упрощённая проверка (позже доработаем через API)
         if "соперник не проигрывает дома" in condition:
             risks.append({"lesson": lesson["lesson"], "level": "🟡 ЕСТЬ РИСК", "detail": condition})
         elif "фаворит выиграл 5+ матчей подряд" in condition:
@@ -463,7 +457,6 @@ def check_lessons(home: str, away: str, sport: str, insights: List[Dict]) -> Lis
 
 # ========== АВТООБНОВЛЕНИЕ РЕЗУЛЬТАТОВ ==========
 async def update_all_results():
-    """Обновляет результаты завершённых матчей и сравнивает с прогнозами"""
     conn = sqlite3.connect("buzova.db")
     c = conn.cursor()
     c.execute("SELECT id, sport, home, away FROM matches WHERE status = 'scheduled' AND date < ?", (datetime.now().isoformat(),))
@@ -473,7 +466,6 @@ async def update_all_results():
     for match_id, sport, home, away in matches:
         result = fetch_match_result(match_id, sport)
         if result:
-            # Обновляем результат в БД
             conn = sqlite3.connect("buzova.db")
             c = conn.cursor()
             c.execute("UPDATE matches SET status = 'finished', home_score = ?, away_score = ? WHERE id = ?", 
@@ -481,7 +473,6 @@ async def update_all_results():
             conn.commit()
             conn.close()
             
-            # Сравниваем с прогнозом
             conn = sqlite3.connect("buzova.db")
             c = conn.cursor()
             c.execute("SELECT bot_pred FROM predictions WHERE match LIKE ? ORDER BY id DESC LIMIT 1", (f"%{home}%{away}%",))
@@ -489,7 +480,7 @@ async def update_all_results():
             conn.close()
             
             if pred_row:
-actual = "Победа хозяев" if result["home_score"] > result["away_score"] else "Победа гостей" if result["away_score"] > result["home_score"] else "Ничья"
+                actual = "Победа хозяев" if result["home_score"] > result["away_score"] else "Победа гостей" if result["away_score"] > result["home_score"] else "Ничья"
                 if actual not in pred_row[0]:
                     new_lesson = f"Ошибка: {home} — {away}. {pred_row[0]} вместо {actual}"
                     add_lesson(new_lesson, f"{home} проиграл, хотя был фаворитом", 2)
@@ -556,7 +547,6 @@ async def cmd_predict(message: types.Message):
     home, away = args[1], args[2]
     insights = get_recent_insights()
     
-    # Получаем уроки из БД
     lessons_risks = check_lessons(home, away, "hockey", insights)
     
     bot_pred = BotPredictor().predict(home, away, insights)
@@ -568,7 +558,6 @@ async def cmd_predict(message: types.Message):
     
     text = f"🔮 ПРОГНОЗ: {home} — {away}\n\n"
     
-    # Блок уроков
     text += "🧠 АНАЛИЗ ПРОШЛЫХ ОШИБОК:\n"
     for r in lessons_risks:
         text += f"{r['lesson']}: {r['level']}\n   → {r['detail']}\n"
@@ -588,8 +577,8 @@ async def cmd_predict(message: types.Message):
         text += "⚠️ КОНСЕНСУСА НЕТ. Решай сам."
     
     await message.answer(text)
-# Сохраняем прогноз для будущего сравнения
-    save_prediction(f"{home}-{away}", "hockey", bot_pred['prediction'], stat_pred['under_2_5_prob'], ai_pred['prediction'])
+    
+    save_prediction(f"{home}-{away}", "hockey", bot_pred['prediction'], str(stat_pred['under_2_5_prob']), ai_pred['prediction'])
 
 @dp.message(Command("parlay"))
 async def cmd_parlay(message: types.Message):
@@ -697,7 +686,6 @@ async def cmd_value(message: types.Message):
     if not matches:
         await message.answer("🔍 Нет матчей для поиска валуя.")
         return
-    # Простой поиск валуя (коэффициенты > 2.0)
     value_bets = []
     for match in matches[:10]:
         odds = fetch_odds(match['home'], match['away'])
@@ -726,7 +714,6 @@ async def scheduled_daily_summary():
         now = datetime.now()
         target = now.replace(hour=23, minute=59, second=0)
         if now >= target:
-            # Обновляем результаты перед итогами
             await update_all_results()
             bank_data = load_bank()
             await bot.send_message(ADMIN_CHAT_ID, f"📢 **ИТОГИ ДНЯ**\n\n💰 Банк: {bank_data['balance']} ₽\n🎯 Цель: {bank_data['goal']} ₽")
