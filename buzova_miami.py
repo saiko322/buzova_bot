@@ -275,30 +275,36 @@ async def check_min_bank(bank_data: Dict):
     if bank_data["balance"] < 500:
         warnings = [f"🔴 СТОП-ЛОСС! БАНК УПАЛ ДО {bank_data['balance']} ₽. СТАВКИ ПРИОСТАНОВЛЕНЫ.", f"💰 ОСТАЛОСЬ {bank_data['balance']} ₽. ХВАТИТ.", f"😭 БУЗОВА ПЛАЧЕТ. БАНК: {bank_data['balance']} ₽."]
         await bot.send_message(ADMIN_CHAT_ID, f"🚨 **СТОП-ЛОСС**\n\n{random.choice(warnings)}")
-
-def get_bank_chart(days: int = 30) -> str:
+        def get_bank_chart(days: int = 30) -> str:
     history = get_bank_history(days)
     if not history:
         return "📭 Недостаточно данных для графика."
     
+    if len(history) < 2:
+        return "📭 Нужно хотя бы 2 точки для графика."
+    
+    # Берём каждую 5-ю запись для графика
     step = max(1, len(history) // 15)
     filtered = history[::step]
     
     balances = [h[0] for h in filtered]
-    min_bal = min(balances)
+    dates = [h[1][5:10] for h in filtered]
+    
+    # Создаём простой текстовый график (без matplotlib)
     max_bal = max(balances)
+    min_bal = min(balances)
     range_bal = max_bal - min_bal if max_bal != min_bal else 1
     
     chart = "📈 **ДИНАМИКА БАНКА**\n\n"
-    for balance, ts in filtered:
-        date = ts[:10]
+    for date, balance in zip(dates, balances):
         height = int((balance - min_bal) / range_bal * 9) + 1
         bar = "█" * height
         chart += f"{date} {bar} {balance} ₽\n"
     
     chart += f"\n📊 МИН: {min_bal} ₽ | МАКС: {max_bal} ₽"
+    chart += f"\n📈 РОСТ: {max_bal - min_bal:+} ₽"
     return chart
-
+    
 # ========== ЖЁСТКИЕ ЦИТАТКИ ==========
 CITATKI_WIN = [
     "🔥 ЕБАТЬ ТЫ ГОСПОДЬ БОГ СТАВОК. БУК В НОСОК. СИМПЛ ОДОБРЯЕТ.",
