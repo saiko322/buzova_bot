@@ -96,9 +96,9 @@ def get_recent_insights(sport: str = None, limit: int = 30) -> List[Dict]:
 def save_parlay(parlay_type: str, events: str, total_odds: float):
     conn = sqlite3.connect("buzova.db")
     c = conn.cursor()
-    c.execute("INSERT INTO parlays (date, type, events, odds, status) VALUES (?, ?, ?, ?, ?)",
+        c.execute("INSERT INTO parlays (date, type, events, odds, status) VALUES (?, ?, ?, ?, ?)",
               (datetime.now().isoformat(), parlay_type, events, total_odds, "active"))
-conn.commit()
+    conn.commit()
     conn.close()
 
 def get_parlays_stats() -> Dict:
