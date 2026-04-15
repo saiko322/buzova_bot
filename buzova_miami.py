@@ -4,29 +4,20 @@ import logging
 import sqlite3
 import random
 import json
-import requests
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
-from telethon import TelegramClient
-from telethon.tl.functions.messages import GetHistoryRequest
 
 # ========== НАСТРОЙКИ ==========
 BOT_TOKEN = "8763712447:AAGvNeYpWWe92FNHB7tUwAMH8VAP5r9Yudg"
-ADMIN_CHAT_ID = 1635609048  # просто число, без os.getenv
-RAPIDAPI_KEY = None  # временно отключено (футбольные матчи не будут работать)
-ODDS_API_KEY = None  # временно отключено (коэффициенты не будут работать)
-TELEGRAM_API_ID = 0  # временно отключено (Telethon не будет работать)
-TELEGRAM_API_HASH = None
-TELEGRAM_PHONE = None
+ADMIN_CHAT_ID = 1635609048
 PORT = 8080
 
 # ========== ИНИЦИАЛИЗАЦИЯ ==========
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
-telethon_client = None  # Telethon отключён
 
 # ========== БАЗА ДАННЫХ ==========
 def init_db():
