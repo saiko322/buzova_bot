@@ -26,8 +26,8 @@ PORT = os.getenv("PORT", "8080")
 # ========== ИНИЦИАЛИЗАЦИЯ ==========
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
-telethon_client = TelegramClient('buzova_session', TELEGRAM_API_ID, TELEGRAM_API_HASH)
-
+# telethon_client = TelegramClient('buzova_session', TELEGRAM_API_ID, TELEGRAM_API_HASH)
+telethon_client = None
 # ========== БАЗА ДАННЫХ ==========
 def init_db():
     conn = sqlite3.connect("buzova.db")
