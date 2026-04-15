@@ -16,7 +16,7 @@ from telethon.tl.functions.messages import GetHistoryRequest
 import os
 BOT_TOKEN = "8763712447:AAGvNeYpWWe92FNHB7tUwAWH8VAP5r9Yudg"
 ADMIN_CHAT_ID = int(os.getenv("ADMIN_CHAT_ID", "0"))
-RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY")
+RAPIDAPI_KEY = None  # временно отключено
 ODDS_API_KEY = os.getenv("ODDS_API_KEY")
 TELEGRAM_API_ID = int(os.getenv("TELEGRAM_API_ID", "0"))
 TELEGRAM_API_HASH = os.getenv("TELEGRAM_API_HASH")
