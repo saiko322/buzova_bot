@@ -1,3 +1,4 @@
+import os
 import asyncio
 import logging
 import sqlite3
@@ -12,22 +13,21 @@ from aiogram.filters import Command
 from telethon import TelegramClient
 from telethon.tl.functions.messages import GetHistoryRequest
 
-# ========== НАСТРОЙКИ (БЕРУТСЯ ИЗ ПЕРЕМЕННЫХ ОКРУЖЕНИЯ В RAILWAY) ==========
-import os
-BOT_TOKEN = "8763712447:AAGvNeYpWWe92FNHB7tUwAWH8VAP5r9Yudg"
-ADMIN_CHAT_ID = int(os.getenv("ADMIN_CHAT_ID", "0"))
-RAPIDAPI_KEY = None  # временно отключено
-ODDS_API_KEY = os.getenv("ODDS_API_KEY")
-TELEGRAM_API_ID = int(os.getenv("TELEGRAM_API_ID", "0"))
-TELEGRAM_API_HASH = os.getenv("TELEGRAM_API_HASH")
-TELEGRAM_PHONE = os.getenv("TELEGRAM_PHONE")
-PORT = os.getenv("PORT", "8080")
+# ========== НАСТРОЙКИ ==========
+BOT_TOKEN = "8763712447:AAGvNeYpWWe92FNHB7tUwAMH8VAP5r9Yudg"
+ADMIN_CHAT_ID = 1635609048  # просто число, без os.getenv
+RAPIDAPI_KEY = None  # временно отключено (футбольные матчи не будут работать)
+ODDS_API_KEY = None  # временно отключено (коэффициенты не будут работать)
+TELEGRAM_API_ID = 0  # временно отключено (Telethon не будет работать)
+TELEGRAM_API_HASH = None
+TELEGRAM_PHONE = None
+PORT = 8080
 
 # ========== ИНИЦИАЛИЗАЦИЯ ==========
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
-# telethon_client = TelegramClient('buzova_session', TELEGRAM_API_ID, TELEGRAM_API_HASH)
-telethon_client = None
+telethon_client = None  # Telethon отключён
+
 # ========== БАЗА ДАННЫХ ==========
 def init_db():
     conn = sqlite3.connect("buzova.db")
